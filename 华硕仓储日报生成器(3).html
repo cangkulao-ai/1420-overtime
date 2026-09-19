@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>华硕仓储日报生成器</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+        textarea::-webkit-scrollbar {
+            width: 8px;
+        }
+        textarea::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        textarea::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-white/10 p-2.5 rounded-xl backdrop-blur-sm">
+                    <i class="fa-solid fa-boxes-packing text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">华硕仓储日报生成器</h1>
+                    <p class="text-xs text-blue-100">高效 · 零默认值 · 快捷导出</p>
+                </div>
+            </div>
+            <button onclick="resetToZero()" class="text-xs bg-blue-700 hover:bg-blue-800 px-3.5 py-2 rounded-lg transition border border-blue-500/40 flex items-center space-x-1.5 shadow-sm active:scale-95">
+                <i class="fa-solid fa-rotate-left"></i>
+                <span>重置归零</span>
+            </button>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-6 w-full flex-grow">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+            <!-- LEFT PANEL: DATA INPUT -->
+            <div class="lg:col-span-6 space-y-5">
+                
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <label for="reportDate" class="block text-sm font-bold text-slate-700 mb-2 flex items-center space-x-2">
+                        <i class="fa-regular fa-calendar-days text-blue-600"></i>
+                        <span>日报日期</span>
+                    </label>
+                    <input type="date" id="reportDate" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-slate-800 font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition text-sm">
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <label class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                            <span class="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded font-extrabold">1</span>
+                            <span>华硕良品订单</span>
+                        </label>
+                        <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2.5 py-1 rounded-full border border-emerald-200/50">良品模块</span>
+                    </div>
+
+                    <!-- Total Orders Input -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+                        <span class="text-xs font-bold text-slate-600 mb-2 block flex items-center space-x-1">
+                            <i class="fa-solid fa-calculator text-slate-400"></i>
+                            <span>总计订单</span>
+                        </span>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">笔数 (笔)</label>
+                                <div class="relative">
+                                    <input type="number" id="goodTotalOrders" value="0" min="0" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 pointer-events-none">笔</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">数量 (片)</label>
+                                <div class="relative">
+                                    <input type="number" id="goodTotalPcs" value="0" min="0" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 pointer-events-none">片</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Done Orders Input -->
+                    <div class="bg-slate-50 p-3 rounded-lg border border-slate-200/80">
+                        <span class="text-xs font-bold text-slate-600 mb-2 block flex items-center space-x-1">
+                            <i class="fa-solid fa-circle-check text-emerald-500"></i>
+                            <span>已完成订单</span>
+                        </span>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">笔数 (笔)</label>
+                                <div class="relative">
+                                    <input type="number" id="goodDoneOrders" value="0" min="0" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 pointer-events-none">笔</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs text-slate-500 block mb-1">数量 (片)</label>
+                                <div class="relative">
+                                    <input type="number" id="goodDonePcs" value="0" min="0" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                                    <span class="absolute right-3 top-2 text-xs text-slate-400 pointer-events-none">片</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                        <label class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                            <span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded font-extrabold">2</span>
+                            <span>华硕坏品处理</span>
+                        </label>
+                        <span class="text-xs text-amber-600 font-semibold bg-amber-50 px-2.5 py-1 rounded-full border border-amber-200/50">坏品模块</span>
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-slate-500 mb-1 block">坏品收货数量 (片)</label>
+                        <div class="relative max-w-xs">
+                            <input type="number" id="badRecvPcs" value="0" min="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 pr-8 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none">
+                            <span class="absolute right-3 top-2 text-xs text-slate-400 pointer-events-none">片</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="freeContent" class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                            <i class="fa-regular fa-pen-to-square text-blue-600"></i>
+                            <span>自由编辑内容</span>
+                        </label>
+                        <span class="text-xs text-slate-400 font-normal">（不带“备注”前缀，直接输出）</span>
+                    </div>
+                    <textarea id="freeContent" rows="3" placeholder="在此输入需要补充的说明文字（如果不填则下文自动留空）..." class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition resize-y"></textarea>
+                </div>
+
+            </div>
+
+            <div class="lg:col-span-6 flex flex-col justify-between">
+                
+                <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 flex flex-col h-full">
+                    <div class="flex items-center justify-between mb-3">
+                        <h2 class="text-sm font-bold text-slate-700 flex items-center space-x-2">
+                            <i class="fa-solid fa-terminal text-blue-600"></i>
+                            <span>实时模板预览</span>
+                        </h2>
+                        <span class="text-xs bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-mono">模板标准导出</span>
+                    </div>
+
+                    <!-- Output Textarea Area -->
+                    <div class="relative flex-grow min-h-[320px] mb-4">
+                        <textarea id="outputText" readonly class="w-full h-full min-h-[320px] bg-slate-900 text-emerald-400 font-mono text-sm p-4 rounded-xl border border-slate-800 focus:outline-none leading-relaxed shadow-inner resize-none select-all"></textarea>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <button onclick="copyToClipboard()" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-sm">
+                            <i class="fa-regular fa-copy text-base"></i>
+                            <span>一键复制文本</span>
+                        </button>
+                        <button onclick="exportTxtFile()" class="w-full bg-slate-800 hover:bg-slate-900 active:bg-black text-white font-semibold py-3 px-4 rounded-xl shadow-sm transition flex items-center justify-center space-x-2 text-sm">
+                            <i class="fa-solid fa-file-arrow-down text-base"></i>
+                            <span>导出为本地 TXT 日志</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-slate-200 py-3 mt-6">
+        <div class="max-w-5xl mx-auto px-4 text-center text-xs text-slate-400">
+            华硕仓储 Daily Report Generator &copy; 2026
+        </div>
+    </footer>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed top-5 right-5 z-50 transition-all duration-300 ease-out transform translate-y-[-20px] opacity-0 pointer-events-none">
+        <div class="bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-slate-700">
+            <span id="toastIcon" class="text-emerald-400 text-lg"><i class="fa-solid fa-circle-check"></i></span>
+            <span id="toastMessage" class="text-sm font-medium">消息提示</span>
+        </div>
+    </div>
+
+    <script>
+        const dateInput = document.getElementById('reportDate');
+        const goodTotalOrders = document.getElementById('goodTotalOrders');
+        const goodTotalPcs = document.getElementById('goodTotalPcs');
+        const goodDoneOrders = document.getElementById('goodDoneOrders');
+        const goodDonePcs = document.getElementById('goodDonePcs');
+        const badRecvPcs = document.getElementById('badRecvPcs');
+        const freeContent = document.getElementById('freeContent');
+        const outputText = document.getElementById('outputText');
+
+        // Set default date to TODAY (YYYY-MM-DD for date picker)
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        dateInput.value = `${yyyy}-${mm}-${dd}`;
+
+        // Format Date YYYY-MM-DD -> YYYY/MM/DD
+        function formatDateToSlash(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length < 3) return dateStr;
+            return `${parts[0]}/${parts[1]}/${parts[2]}`;
+        }
+
+        // Live Generate Report
+        function generateReport() {
+            const formattedDate = formatDateToSlash(dateInput.value);
+            const gTotalOrders = goodTotalOrders.value !== '' ? goodTotalOrders.value : '0';
+            const gTotalPcs = goodTotalPcs.value !== '' ? goodTotalPcs.value : '0';
+            const gDoneOrders = goodDoneOrders.value !== '' ? goodDoneOrders.value : '0';
+            const gDonePcs = goodDonePcs.value !== '' ? goodDonePcs.value : '0';
+            const bRecvPcs = badRecvPcs.value !== '' ? badRecvPcs.value : '0';
+            const customNotes = freeContent.value.trim();
+
+            // Strict template formatting matching requirements
+            let template = `日报日期：${formattedDate}
+1.华硕良品订单：
+   总计   ${gTotalOrders}笔，${gTotalPcs} 片   
+   已完成  ${gDoneOrders}笔， ${gDonePcs}片
+2.华硕坏品处理：
+坏品收货${bRecvPcs}`;
+
+            // Append custom free-text only if provided (NO "备注" header)
+            if (customNotes) {
+                template += `\n${customNotes}`;
+            }
+
+            outputText.value = template;
+        }
+
+        // Listen for all inputs to trigger real-time preview updates
+        [dateInput, goodTotalOrders, goodTotalPcs, goodDoneOrders, goodDonePcs, badRecvPcs, freeContent].forEach(input => {
+            input.addEventListener('input', generateReport);
+        });
+
+        // Toast Notification System
+        let toastTimer;
+        function showToast(msg, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMessage.textContent = msg;
+            toastIcon.innerHTML = isError 
+                ? '<i class="fa-solid fa-circle-xmark text-rose-400"></i>' 
+                : '<i class="fa-solid fa-circle-check text-emerald-400"></i>';
+
+            toast.classList.remove('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-[-20px]', 'opacity-0', 'pointer-events-none');
+            }, 2500);
+        }
+
+        // Copy Text Function
+        function copyToClipboard() {
+            outputText.select();
+            outputText.setSelectionRange(0, 99999);
+
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    showToast('已成功复制文本到剪贴板！');
+                } else {
+                    showToast('复制失败，请手动选择框内文本', true);
+                }
+            } catch (err) {
+                showToast('当前浏览器不支持快捷复制，请手动复制', true);
+            }
+        }
+
+        // Export TXT Log File
+        function exportTxtFile() {
+            const content = outputText.value;
+            const dateStr = dateInput.value || `${yyyy}-${mm}-${dd}`;
+            const fileName = `华硕日报_${dateStr}.txt`;
+
+            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = fileName;
+
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            URL.revokeObjectURL(link.href);
+            showToast(`已导出日志文件: ${fileName}`);
+        }
+
+        // Reset all numerical values to ZERO
+        function resetToZero() {
+            dateInput.value = `${yyyy}-${mm}-${dd}`;
+            goodTotalOrders.value = 0;
+            goodTotalPcs.value = 0;
+            goodDoneOrders.value = 0;
+            goodDonePcs.value = 0;
+            badRecvPcs.value = 0;
+            freeContent.value = '';
+            generateReport();
+            showToast('所有数值已重置为 0');
+        }
+
+        // Initial render on window load
+        window.onload = function() {
+            generateReport();
+        };
+    </script>
+</body>
+</html>
