@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>1420仓库加班统计工具</title>
+    <!-- Tailwind CSS for utility-first styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Base touch & font settings */
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: #f1f5f9;
+        }
+
+        /* Custom smooth toast animation */
+        #toast {
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform: translate(-50%, 100px);
+            opacity: 0;
+        }
+        #toast.show {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+
+        /* Prevent page auto-zoom on mobile inputs */
+        input, select {
+            font-size: 16px !important;
+        }
+
+        /* Custom scrollbar styling for list container */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="text-slate-800 pb-10 min-h-screen flex flex-col items-center">
+
+    <!-- Top Header Bar -->
+    <header class="w-full bg-blue-600 text-white shadow-md sticky top-0 z-30">
+        <div class="max-w-md mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa-solid font-bold fa-boxes-packing text-blue-200 text-xl"></i>
+                <div>
+                    <h1 class="text-base font-bold leading-tight">1420仓库加班统计</h1>
+                    <p class="text-[10px] text-blue-200">手机端快捷生成 & 实时保存</p>
+                </div>
+            </div>
+
+            <!-- Real-time Persistence Badge -->
+            <div id="save-status-badge" class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-200 border border-emerald-400/30 transition-all">
+                <span class="w-2 h-2 mr-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="save-status-text">已实时保存</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="w-full max-w-md px-3.5 py-4 space-y-4 flex-1">
+
+        <!-- Date Selection Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+            <div class="flex justify-between items-center mb-2">
+                <label for="date-picker" class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                    <i class="fa-regular fa-calendar-check text-blue-600"></i> 加班日期设置
+                </label>
+                <span id="weekday-tag" class="text-xs font-bold px-2.5 py-0.5 bg-blue-50 text-blue-600 rounded-full border border-blue-200">
+                    星期五
+                </span>
+            </div>
+            <div class="relative">
+                <input type="date" id="date-picker" onchange="onDateChange()"
+                    class="w-full bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-xl px-3.5 py-2.5 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+            </div>
+        </div>
+
+        <!-- Add Personnel Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+            <label class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block flex items-center gap-1.5">
+                <i class="fa-solid fa-user-plus text-blue-600"></i> 添加新人员名单
+            </label>
+            <form onsubmit="handleAddStaff(event)" class="flex gap-2">
+                <input type="text" id="new-staff-name" placeholder="输入姓名（如：小李）"
+                    class="flex-1 bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition">
+                <button type="submit" 
+                    class="bg-blue-600 active:bg-blue-700 active:scale-95 text-white font-bold px-4 py-2.5 rounded-xl text-sm shadow-sm transition flex items-center gap-1 shrink-0">
+                    <i class="fa-solid fa-plus"></i> 添加
+                </button>
+            </form>
+        </div>
+
+        <!-- Personnel Roster and Hours Selection Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+            <div class="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div class="flex items-center gap-1.5">
+                    <i class="fa-solid fa-users text-blue-600 text-sm"></i>
+                    <h2 class="text-sm font-bold text-slate-700">勾选人员与加班时长</h2>
+                </div>
+                <div class="flex gap-3 text-xs font-medium">
+                    <button type="button" onclick="selectAllStaff(true)" class="text-blue-600 hover:underline active:text-blue-800">全选</button>
+                    <span class="text-slate-300">|</span>
+                    <button type="button" onclick="selectAllStaff(false)" class="text-slate-500 hover:underline active:text-slate-700">清空勾选</button>
+                </div>
+            </div>
+
+            <!-- Dynamic Staff List -->
+            <div id="staff-list-container" class="space-y-2.5 max-h-[380px] overflow-y-auto custom-scrollbar pr-1">
+                <!-- Staff rows will be injected here dynamically -->
+            </div>
+        </div>
+
+        <!-- Output Report Card -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 space-y-3">
+            <div class="flex justify-between items-center">
+                <h2 class="text-sm font-bold text-slate-700 flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-lines text-blue-600"></i> 生成统计文本预览
+                </h2>
+                <span id="selected-count-badge" class="text-xs font-bold px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-full">
+                    已选 0 人
+                </span>
+            </div>
+
+            <textarea id="output-preview" rows="8" readonly
+                class="w-full text-xs font-mono bg-slate-900 text-emerald-400 border border-slate-800 rounded-xl p-3.5 focus:outline-none resize-none leading-relaxed shadow-inner"
+                placeholder="勾选上方人员后将实时自动生成文本..."></textarea>
+
+            <div class="grid grid-cols-1 gap-2.5 pt-1">
+                <button type="button" onclick="copyReportText()" 
+                    class="w-full py-3 bg-emerald-600 active:bg-emerald-700 active:scale-[0.98] text-white font-bold rounded-xl text-sm shadow-md transition flex justify-center items-center gap-2">
+                    <i class="fa-solid fa-copy text-base"></i>
+                    <span>一键复制加班统计结果</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer Management Controls -->
+        <div class="pt-2 flex justify-center">
+            <button type="button" onclick="promptRestoreDefaults()" class="text-xs text-slate-400 hover:text-rose-500 active:text-rose-600 transition flex items-center gap-1">
+                <i class="fa-solid fa-rotate-left"></i> 恢复初始默认名单
+            </button>
+        </div>
+
+    </main>
+
+    <!-- Toast Popup Notification -->
+    <div id="toast" class="fixed bottom-6 left-1/2 z-50 bg-slate-900/90 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-2xl flex items-center space-x-2 backdrop-blur-sm border border-slate-700">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toast-message">操作成功</span>
+    </div>
+
+    <!-- Custom Modal Component (Replaces native confirm/alert) -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden transition-opacity">
+        <div class="bg-white rounded-2xl max-w-xs w-full p-5 shadow-2xl space-y-4 border border-slate-100">
+            <div class="text-center space-y-2">
+                <div class="w-12 h-12 bg-rose-100 text-rose-500 rounded-full flex items-center justify-center mx-auto text-lg">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                </div>
+                <h3 id="modal-title" class="font-bold text-slate-800 text-base">提示操作</h3>
+                <p id="modal-msg" class="text-xs text-slate-500 leading-relaxed">确定要进行此操作吗？</p>
+            </div>
+            <div class="flex gap-2">
+                <button type="button" onclick="closeModal()" class="flex-1 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl active:bg-slate-200">
+                    取消
+                </button>
+                <button type="button" id="modal-confirm-btn" class="flex-1 py-2.5 bg-rose-600 text-white text-xs font-bold rounded-xl active:bg-rose-700 shadow-sm">
+                    确认执行
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Storage Keys & Defaults
+        const STORAGE_KEY = '1420_warehouse_staff_roster_v4';
+        const DEFAULT_STAFF_NAMES = ["冬雪", "夏师傅", "陈静", "Eugene", "yina", "dodo", "Jeorge", "潘姐"];
+        const WEEKDAYS_CN = ['日', '一', '二', '三', '四', '五', '六'];
+
+        // Application State Variables
+        let staffList = []; // Array of Objects: [{ id: '123', name: '冬雪', selected: true/false, hours: 1 }]
+        let editingStaffId = null; // ID of staff being edited inline
+
+        // Page Load Initializer
+        document.addEventListener('DOMContentLoaded', () => {
+            initDatePicker();
+            loadStaffData();
+            renderRoster();
+            generateReport();
+        });
+
+        // Load data from LocalStorage or fall back to Defaults
+        function loadStaffData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                try {
+                    staffList = JSON.parse(savedData);
+                } catch (e) {
+                    initDefaultStaffList();
+                }
+            } else {
+                initDefaultStaffList();
+            }
+        }
+
+        // Initialize default personnel roster structure
+        function initDefaultStaffList() {
+            staffList = DEFAULT_STAFF_NAMES.map((name, index) => ({
+                id: 'staff_' + Date.now() + '_' + index,
+                name: name,
+                selected: false,
+                hours: 1
+            }));
+            saveStaffData(false);
+        }
+
+        // Save current roster to LocalStorage
+        function saveStaffData(showStatus = true) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(staffList));
+            if (showStatus) {
+                triggerSaveBadgeAnimation();
+            }
+        }
+
+        // Visual pulsing animation badge when autosave happens
+        function triggerSaveBadgeAnimation() {
+            const badge = document.getElementById('save-status-badge');
+            const statusText = document.getElementById('save-status-text');
+            
+            badge.classList.remove('bg-emerald-500/20', 'border-emerald-400/30', 'text-emerald-200');
+            badge.classList.add('bg-amber-500/30', 'border-amber-400/50', 'text-amber-100');
+            statusText.textContent = '保存中...';
+
+            setTimeout(() => {
+                badge.classList.remove('bg-amber-500/30', 'border-amber-400/50', 'text-amber-100');
+                badge.classList.add('bg-emerald-500/20', 'border-emerald-400/30', 'text-emerald-200');
+                statusText.textContent = '已实时保存';
+            }, 400);
+        }
+
+        // Initialize Date Picker to today
+        function initDatePicker() {
+            const datePicker = document.getElementById('date-picker');
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            
+            datePicker.value = `${year}-${month}-${day}`;
+            updateWeekdayTag();
+        }
+
+        // Date selection change event handler
+        function onDateChange() {
+            updateWeekdayTag();
+            generateReport();
+        }
+
+        // Calculate and display Chinese weekday
+        function updateWeekdayTag() {
+            const dateVal = document.getElementById('date-picker').value;
+            const weekdayTag = document.getElementById('weekday-tag');
+            if (!dateVal) return;
+
+            const [y, m, d] = dateVal.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const weekdayStr = WEEKDAYS_CN[dateObj.getDay()];
+
+            weekdayTag.textContent = `星期${weekdayStr}`;
+        }
+
+        // Render Staff List to UI
+        function renderRoster() {
+            const container = document.getElementById('staff-list-container');
+            container.innerHTML = '';
+
+            if (staffList.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center py-8 text-slate-400 text-xs">
+                        <i class="fa-solid fa-users-slash text-2xl mb-1 block"></i>
+                        暂无人员，请在下方输入框添加
+                    </div>`;
+                updateSelectedCount();
+                generateReport();
+                return;
+            }
+
+            staffList.forEach((staff) => {
+                const item = document.createElement('div');
+                item.className = `flex items-center justify-between p-2.5 rounded-xl border transition-all ${
+                    staff.selected 
+                        ? 'bg-blue-50/70 border-blue-200 shadow-sm' 
+                        : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300'
+                }`;
+
+                const isEditing = editingStaffId === staff.id;
+
+                let nameContentHtml = '';
+                if (isEditing) {
+                    nameContentHtml = `
+                        <div class="flex items-center gap-1 flex-1 mr-2">
+                            <input type="text" id="inline-input-${staff.id}" value="${escapeHtml(staff.name)}" 
+                                class="w-full text-xs font-bold text-slate-800 bg-white border border-blue-400 rounded-lg px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500">
+                            <button onclick="saveInlineEdit('${staff.id}')" class="p-1 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fa-solid fa-check"></i></button>
+                            <button onclick="cancelInlineEdit()" class="p-1 text-slate-400 hover:bg-slate-100 rounded"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                    `;
+                } else {
+                    nameContentHtml = `
+                        <label class="flex items-center space-x-2.5 cursor-pointer flex-1 min-w-0 pr-2">
+                            <input type="checkbox" ${staff.selected ? 'checked' : ''} onchange="toggleStaffSelection('${staff.id}')"
+                                class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500 transition cursor-pointer shrink-0">
+                            <span class="text-sm font-bold truncate ${staff.selected ? 'text-blue-900' : 'text-slate-700'}">${escapeHtml(staff.name)}</span>
+                        </label>
+                    `;
+                }
+
+                item.innerHTML = `
+                    ${nameContentHtml}
+                    
+                    <div class="flex items-center space-x-1.5 shrink-0">
+                        <!-- Hour Selector -->
+                        <div class="flex items-center bg-white border border-slate-200 rounded-lg overflow-hidden shadow-2xs">
+                            <select onchange="updateStaffHours('${staff.id}', this.value)" 
+                                class="text-xs font-semibold text-slate-700 bg-transparent px-2 py-1 focus:outline-none cursor-pointer">
+                                ${[1,2,3,4,5,6,7,8].map(h => `<option value="${h}" ${staff.hours == h ? 'selected' : ''}>${h}小时</option>`).join('')}
+                            </select>
+                        </div>
+
+                        <!-- Action Edit Button -->
+                        ${!isEditing ? `
+                        <button type="button" onclick="startInlineEdit('${staff.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 active:bg-slate-200 rounded-lg transition" title="编辑名字">
+                            <i class="fa-solid fa-pen-to-square text-xs"></i>
+                        </button>
+                        ` : ''}
+
+                        <!-- Action Delete Button -->
+                        <button type="button" onclick="deleteStaff('${staff.id}')" class="p-1.5 text-slate-400 hover:text-rose-600 active:bg-rose-50 rounded-lg transition" title="删除">
+                            <i class="fa-solid fa-trash-can text-xs"></i>
+                        </button>
+                    </div>
+                `;
+
+                container.appendChild(item);
+            });
+
+            updateSelectedCount();
+            generateReport();
+        }
+
+        // Add new staff name
+        function handleAddStaff(e) {
+            e.preventDefault();
+            const input = document.getElementById('new-staff-name');
+            const name = input.value.trim();
+
+            if (!name) {
+                showToast('请输入姓名', 'warning');
+                return;
+            }
+
+            // Check duplicate
+            if (staffList.some(s => s.name === name)) {
+                showToast('名单中已有该姓名', 'warning');
+                return;
+            }
+
+            const newStaff = {
+                id: 'staff_' + Date.now(),
+                name: name,
+                selected: true, // auto select newly added person
+                hours: 1
+            };
+
+            staffList.push(newStaff);
+            saveStaffData();
+            input.value = '';
+            renderRoster();
+            showToast(`已添加：${name}`, 'success');
+        }
+
+        // Toggle selection state
+        function toggleStaffSelection(id) {
+            const staff = staffList.find(s => s.id === id);
+            if (staff) {
+                staff.selected = !staff.selected;
+                saveStaffData();
+                renderRoster();
+            }
+        }
+
+        // Update overtime hours for staff
+        function updateStaffHours(id, hoursVal) {
+            const staff = staffList.find(s => s.id === id);
+            if (staff) {
+                staff.hours = parseInt(hoursVal, 10);
+                saveStaffData();
+                generateReport();
+            }
+        }
+
+        // Select all / Deselect all
+        function selectAllStaff(shouldSelect) {
+            staffList.forEach(s => s.selected = shouldSelect);
+            saveStaffData();
+            renderRoster();
+            showToast(shouldSelect ? '已全选' : '已取消全选', 'info');
+        }
+
+        // Delete staff item
+        function deleteStaff(id) {
+            const staff = staffList.find(s => s.id === id);
+            const staffName = staff ? staff.name : '';
+            staffList = staffList.filter(s => s.id !== id);
+            saveStaffData();
+            renderRoster();
+            showToast(`已删除：${staffName}`, 'info');
+        }
+
+        // Inline edit start
+        function startInlineEdit(id) {
+            editingStaffId = id;
+            renderRoster();
+            const input = document.getElementById(`inline-input-${id}`);
+            if (input) {
+                input.focus();
+                input.select();
+            }
+        }
+
+        // Save inline edit
+        function saveInlineEdit(id) {
+            const input = document.getElementById(`inline-input-${id}`);
+            if (!input) return;
+            const newName = input.value.trim();
+
+            if (!newName) {
+                showToast('姓名不能为空', 'warning');
+                return;
+            }
+
+            const staff = staffList.find(s => s.id === id);
+            if (staff) {
+                staff.name = newName;
+                saveStaffData();
+            }
+            editingStaffId = null;
+            renderRoster();
+            showToast('姓名修改成功', 'success');
+        }
+
+        // Cancel inline edit
+        function cancelInlineEdit() {
+            editingStaffId = null;
+            renderRoster();
+        }
+
+        // Update selection count badge
+        function updateSelectedCount() {
+            const count = staffList.filter(s => s.selected).length;
+            const badge = document.getElementById('selected-count-badge');
+            badge.textContent = `已选 ${count} 人`;
+            if (count > 0) {
+                badge.className = 'text-xs font-bold px-2.5 py-0.5 bg-blue-100 text-blue-700 rounded-full';
+            } else {
+                badge.className = 'text-xs font-bold px-2.5 py-0.5 bg-slate-100 text-slate-600 rounded-full';
+            }
+        }
+
+        // Generate final format report
+        function generateReport() {
+            const dateVal = document.getElementById('date-picker').value;
+            const outputPreview = document.getElementById('output-preview');
+
+            if (!dateVal) {
+                outputPreview.value = '请选择正确日期...';
+                return;
+            }
+
+            const [y, m, d] = dateVal.split('-').map(Number);
+            const dateObj = new Date(y, m - 1, d);
+            const weekdayStr = WEEKDAYS_CN[dateObj.getDay()];
+
+            // Format example: 2026年09月18号
+            const formattedDate = `${y}年${String(m).padStart(2, '0')}月${String(d).padStart(2, '0')}号`;
+
+            const selectedStaff = staffList.filter(s => s.selected);
+
+            if (selectedStaff.length === 0) {
+                outputPreview.value = `1420仓库加班统计\n日期：${formattedDate}\n星期：${weekdayStr}\n加班时长/人员如下：\n\n（尚未勾选任何加班人员）`;
+                return;
+            }
+
+            let report = `1420仓库加班统计\n`;
+            report += `日期：${formattedDate}\n`;
+            report += `星期：${weekdayStr}\n`;
+            report += `加班时长/人员如下：\n\n`;
+
+            selectedStaff.forEach(s => {
+                report += `${s.hours}小时， ${s.name}\n`;
+            });
+
+            outputPreview.value = report.trim();
+        }
+
+        // Copy generated text to clipboard
+        function copyReportText() {
+            const outputTextarea = document.getElementById('output-preview');
+            const textToCopy = outputTextarea.value;
+
+            if (!textToCopy || textToCopy.includes('（尚未勾选')) {
+                showToast('请先勾选加班人员', 'warning');
+                return;
+            }
+
+            // Clipboard execution with cross-browser fallback
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(textToCopy).then(() => {
+                    showToast('统计报告已复制到剪贴板！', 'success');
+                }).catch(() => {
+                    fallbackCopy(outputTextarea);
+                });
+            } else {
+                fallbackCopy(outputTextarea);
+            }
+        }
+
+        // Fallback copy using execCommand
+        function fallbackCopy(textarea) {
+            textarea.select();
+            textarea.setSelectionRange(0, 99999); // for mobile
+            try {
+                document.execCommand('copy');
+                showToast('统计报告已复制到剪贴板！', 'success');
+            } catch (err) {
+                showToast('复制失败，请手动长按全选复制', 'warning');
+            }
+            window.getSelection().removeAllRanges();
+        }
+
+        // Custom Toast Notification System
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.textContent = msg;
+
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400 text-sm';
+            } else if (type === 'warning') {
+                toastIcon.className = 'fa-solid fa-triangle-exclamation text-amber-400 text-sm';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400 text-sm';
+            }
+
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2300);
+        }
+
+        // Prompt for restoring default personnel roster
+        function promptRestoreDefaults() {
+            showModal({
+                title: '恢复默认名单？',
+                msg: '此操作将重置人员名单为初始配置，自定义添加的名字将被清除。',
+                onConfirm: () => {
+                    initDefaultStaffList();
+                    renderRoster();
+                    showToast('已恢复为初始默认名单', 'info');
+                }
+            });
+        }
+
+        // Show Modal
+        function showModal({ title, msg, onConfirm }) {
+            const modal = document.getElementById('custom-modal');
+            document.getElementById('modal-title').textContent = title;
+            document.getElementById('modal-msg').textContent = msg;
+            
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            confirmBtn.onclick = () => {
+                onConfirm();
+                closeModal();
+            };
+
+            modal.classList.remove('hidden');
+        }
+
+        // Close Modal
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // Helper: Escape HTML string
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
